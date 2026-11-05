@@ -2,45 +2,61 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PoC v3 — FSA sibling APIs</title>
-<style>body{font-family:sans-serif;margin:16px}#log{white-space:pre-wrap;font-family:monospace;font-size:12px;background:#111;color:#0f0;padding:10px;border-radius:6px}button{font-size:16px;padding:10px;margin:4px;width:100%}</style>
+<title>FSA sibling test</title>
+<style>
+ body{font-family:system-ui,sans-serif;margin:16px}
+ .v{font-size:22px;font-weight:800;padding:14px;border-radius:10px;margin:12px 0;text-align:center}
+ .red{background:#fdd;color:#b00}.grn{background:#dfd;color:#080}.ylw{background:#ffe0a3;color:#960}.gray{background:#eee;color:#333}
+ #log{white-space:pre-wrap;font-family:monospace;font-size:12px;background:#111;color:#3f3;padding:10px;border-radius:8px;min-height:140px}
+ a{font-size:20px}
+</style>
 </head>
 <body>
-<h2>FSA sibling API diagnostic</h2>
-<p style="font-size:11px;word-break:break-all;">UA: <b id="ver"></b></p>
-<a href="https://example.com" style="font-size:20px;">👉 Tekan lama tautan ini → pilih "Preview page"</a>
-<div id="log">menunggu…</div>
+<h2 id="title">FSA test: <span id="modeLbl">…</span></h2>
+<p style="font-size:11px">UA: <b id="ver"></b></p>
+<ol>
+  <li>Tekan <b>lama</b> tautan di bawah.</li>
+  <li>Pilih <b>"Preview page / Pratinjau halaman"</b>.</li>
+  <li>Tunggu 3 detik, jangan sentuh.</li>
+</ol>
+<a href="https://example.com" id="link">👉 Tekan lama tautan ini → Preview page</a>
+
+<div id="verdict" class="v gray">menunggu…</div>
+<div id="log"></div>
 
 <script>
-const log=document.getElementById('log');document.getElementById('ver').textContent=navigator.userAgent;
-function L(t){log.textContent+='\n'+t;}
-let fired=false;
-const mode = sessionStorage.getItem('mode') || 'open';
-document.addEventListener("contextmenu",()=>{
-  if(fired)return;fired=true;
-  log.textContent='contextmenu @ '+new Date().toLocaleTimeString()+'\nmode='+mode;
-  L('isActive: '+navigator.userActivation.isActive);
-  setTimeout(async()=>{
-    try{
-      let r;
-      if(mode==='save')       r=await window.showSaveFilePicker();
-      else if(mode==='dir')   r=await window.showDirectoryPicker();
-      else                    r=await window.showOpenFilePicker();
-      L('✅ RESOLVED ('+mode+') — picker TERBUKA');
-    }catch(e){
-      L((e.name==='AbortError'?'🟡 AbortError → picker TERBUKA lalu ditutup':
-         (e.name==='SecurityError'||e.name==='NotAllowedError')?'🟢 DIBLOKIR ('+e.name+')':'❓ '+e.name)
-        + ' | mode='+mode);
+var MODE = new URLSearchParams(location.search).get('m') || 'save'; // save | dir | open
+var names = {save:'showSaveFilePicker', dir:'showDirectoryPicker', open:'showOpenFilePicker'};
+document.getElementById('modeLbl').textContent = names[MODE];
+document.getElementById('ver').textContent = navigator.userAgent;
+
+var v = document.getElementById('verdict'), Lg = document.getElementById('log');
+function setV(txt, cls){ v.textContent = txt; v.className = 'v ' + cls; }
+function L(t){ Lg.textContent += '\n' + t; }
+
+var fired = false;
+document.addEventListener('contextmenu', function(){
+  if (fired) return; fired = true;
+  L('[contextmenu] isActive=' + navigator.userActivation.isActive);
+  setV('tunggu 3 detik…', 'ylw');
+  setTimeout(async function(){
+    L('[T+3s] memanggil ' + names[MODE] + '…  isActive=' + navigator.userActivation.isActive);
+    try {
+      var r = (MODE==='save') ? await showSaveFilePicker()
+            : (MODE==='dir')  ? await showDirectoryPicker()
+            : await showOpenFilePicker();
+      L('RESOLVED → picker TERBUKA');
+      setV('🔴 PICKER TERBUKA → GAP! (' + names[MODE] + ')', 'red');
+    } catch(e) {
+      L('EXCEPTION ' + e.name + ': ' + e.message);
+      if (e.name === 'AbortError')
+        setV('🟡 AbortError → picker TERBUKA lalu ditutup → activation VALID', 'ylw');
+      else if (e.name === 'SecurityError' || e.name === 'NotAllowedError')
+        setV('🟢 DIBLOKIR (' + e.name + ') → fix jalan untuk ' + names[MODE], 'grn');
+      else
+        setV('❓ ' + e.name, 'gray');
     }
-  },3000);
-});
-// tombol pindah mode (karena contextmenu cuma sekali per load)
-['open','save','dir'].forEach(m=>{
-  const b=document.createElement('button');
-  b.textContent='Set mode: '+m+' (reload setelah klik)';
-  b.onclick=()=>{sessionStorage.setItem('mode',m);location.reload();};
-  if(m===mode) b.style.background='#ffd';
-  document.body.appendChild(b);
+  }, 3000);
 });
 </script>
 </body>

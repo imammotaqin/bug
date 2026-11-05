@@ -1,53 +1,46 @@
 <!doctype html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PoC v2 — FSA picker diagnostic</title>
-<style>
- body{font-family:sans-serif;margin:16px;}
- #log{white-space:pre-wrap;font-family:monospace;font-size:12px;background:#111;color:#0f0;padding:10px;border-radius:6px;}
-</style>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PoC v3 — FSA sibling APIs</title>
+<style>body{font-family:sans-serif;margin:16px}#log{white-space:pre-wrap;font-family:monospace;font-size:12px;background:#111;color:#0f0;padding:10px;border-radius:6px}button{font-size:16px;padding:10px;margin:4px;width:100%}</style>
 </head>
 <body>
-<h2>FSA picker — diagnostic v2</h2>
+<h2>FSA sibling API diagnostic</h2>
 <p style="font-size:11px;word-break:break-all;">UA: <b id="ver"></b></p>
-<ol>
-  <li>Tekan lama tautan di bawah.</li>
-  <li>Pilih <b>"Preview page / Pratinjau halaman"</b>.</li>
-  <li>Tunggu 3 detik.</li>
-</ol>
-<a href="https://example.com" style="font-size:20px;">👉 Tekan lama tautan ini</a>
+<a href="https://example.com" style="font-size:20px;">👉 Tekan lama tautan ini → pilih "Preview page"</a>
 <div id="log">menunggu…</div>
 
 <script>
-const log = document.getElementById('log');
-document.getElementById('ver').textContent = navigator.userAgent;
-function L(t){ log.textContent += '\n' + t; }
-let fired = false;
-
-document.addEventListener("contextmenu", () => {
-  if (fired) return;
-  fired = true;
-  log.textContent = 'contextmenu @ ' + new Date().toLocaleTimeString();
-  L('isActive saat contextmenu: ' + navigator.userActivation.isActive);
-  setTimeout(async () => {
-    L('T+3s → panggil showOpenFilePicker()…');
-    L('isActive tepat sebelum panggil: ' + navigator.userActivation.isActive);
-    try {
-      const [h] = await window.showOpenFilePicker();
-      L('✅ RESOLVED — picker TERBUKA, file: ' + (h && h.name));
-    } catch (e) {
-      if (e.name === 'AbortError')
-        L('🟡 AbortError → picker TADI TERBUKA lalu dibatalkan. Activation VALID (bukan diblokir!)');
-      else if (e.name === 'SecurityError')
-        L('🟢 SecurityError → DIBLOKIR. Fix jalan.');
-      else if (e.name === 'NotAllowedError')
-        L('🟢 NotAllowedError → DIBLOKIR. Fix jalan.');
-      else
-        L('❓ ' + e.name + ' — ' + e.message);
+const log=document.getElementById('log');document.getElementById('ver').textContent=navigator.userAgent;
+function L(t){log.textContent+='\n'+t;}
+let fired=false;
+const mode = sessionStorage.getItem('mode') || 'open';
+document.addEventListener("contextmenu",()=>{
+  if(fired)return;fired=true;
+  log.textContent='contextmenu @ '+new Date().toLocaleTimeString()+'\nmode='+mode;
+  L('isActive: '+navigator.userActivation.isActive);
+  setTimeout(async()=>{
+    try{
+      let r;
+      if(mode==='save')       r=await window.showSaveFilePicker();
+      else if(mode==='dir')   r=await window.showDirectoryPicker();
+      else                    r=await window.showOpenFilePicker();
+      L('✅ RESOLVED ('+mode+') — picker TERBUKA');
+    }catch(e){
+      L((e.name==='AbortError'?'🟡 AbortError → picker TERBUKA lalu ditutup':
+         (e.name==='SecurityError'||e.name==='NotAllowedError')?'🟢 DIBLOKIR ('+e.name+')':'❓ '+e.name)
+        + ' | mode='+mode);
     }
-  }, 3000);
+  },3000);
+});
+// tombol pindah mode (karena contextmenu cuma sekali per load)
+['open','save','dir'].forEach(m=>{
+  const b=document.createElement('button');
+  b.textContent='Set mode: '+m+' (reload setelah klik)';
+  b.onclick=()=>{sessionStorage.setItem('mode',m);location.reload();};
+  if(m===mode) b.style.background='#ffd';
+  document.body.appendChild(b);
 });
 </script>
 </body>
